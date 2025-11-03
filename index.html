@@ -1,0 +1,938 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Demo Phone Mockup with Spin Wheel</title>
+    <!-- Tailwind CSS for basic utilities -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Import Inter Font */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
+        
+        /* Gradient Background Animation */
+        @keyframes gradient-animation {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* Body Styles */
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(-45deg, #ff0050, #00f2ea, #000000);
+            background-size: 400% 400%;
+            animation: gradient-animation 15s ease infinite;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            overflow: hidden; 
+        }
+
+        /* Phone Container (Adaptive Rectangle) */
+        #phone-container {
+            width: 400px; 
+            height: 100vh;
+            max-width: 100vw; 
+            max-height: 100vh; 
+            position: relative;
+            background: #000000; 
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5); 
+            border-radius: 10px;
+            overflow: hidden; 
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Stage Transition Container */
+        .stage {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            transition: transform 0.5s ease-in-out;
+            box-sizing: border-box;
+        }
+        
+        /* NEW: Preload Delay Overlay - Interactive Block Screen */
+        #preload-delay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #000;
+            z-index: 10; 
+            transition: opacity 0.5s;
+            pointer-events: auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: white;
+            font-size: 1.2rem;
+            text-align: center;
+            font-weight: 600;
+            opacity: 1;
+            flex-direction: column; /* To stack the message and play icon */
+        }
+
+        /* Play Icon Styles */
+        #play-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-top: 10px;
+            border: 2px solid white;
+        }
+
+        /* Triangle for the Play Symbol (Inline SVG equivalent) */
+        #play-icon::before {
+            content: '';
+            width: 0;
+            height: 0;
+            border-top: 10px solid transparent;
+            border-bottom: 10px solid transparent;
+            border-left: 15px solid white;
+            margin-left: 3px;
+        }
+
+
+        #stage-video {
+            z-index: 5;
+            transform: translateX(0%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            background-color: #000;
+        }
+        
+        /* Overlay to block iframe interaction */
+        #iframe-blocker {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 6; /* Higher than iframe (z-index 5 by default) but lower than chest (z-index 8) */
+            pointer-events: auto; /* Intercepts all mouse events */
+        }
+
+
+        #stage-wheel {
+            z-index: 5;
+            transform: translateX(100%);
+            background: linear-gradient(135deg, #1f084a, #000); /* Dark, stylish background */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start; /* Aligns content better for added rewards section */
+            padding: 20px;
+            padding-top: 40px; /* Added padding-top to give space at the top */
+        }
+
+        .show-wheel #stage-video {
+            transform: translateX(-100%);
+        }
+
+        .show-wheel #stage-wheel {
+            transform: translateX(0%);
+        }
+
+        /* Video Player */
+        #intro-iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            background-color: #000;
+        }
+        
+        /* Chest Overlay */
+        #chest-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: none; 
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            background: rgba(0, 0, 0, 0.6);
+            z-index: 8;
+            cursor: pointer;
+        }
+
+        #chest-image {
+            width: 150px;
+            height: 150px;
+            animation: pulse 1s infinite alternate;
+            z-index: 9;
+            object-fit: contain; 
+        }
+
+        @keyframes pulse {
+            from { transform: scale(1); opacity: 0.9; }
+            to { transform: scale(1.1); opacity: 1; }
+        }
+
+        /* Gradient text for chest reward */
+        #chest-text {
+            font-size: 1.5rem;
+            font-weight: 800;
+            margin-top: 10px;
+            color: white; /* Base color is white */
+            
+            /* Gradient Shadow Effect for "GET YOUR DAILY REWARD" */
+            text-shadow: 
+                2px 2px 2px #fe2858,
+                -2px -2px 2px #2af0ea,
+                0 0 10px rgba(255, 255, 255, 0.5); /* Central glow */
+        }
+
+        /* NEW: Gradient Shadow Header Style */
+        .tiktok-gifts-header {
+            font-size: 1.875rem; /* text-3xl */
+            font-weight: 800; /* font-extrabold */
+            color: white; /* Main text color is white */
+            margin-bottom: 20px;
+            
+            /* Gradient Shadow Effect */
+            text-shadow: 
+                2px 2px 2px #fe2858,
+                -2px -2px 2px #2af0ea,
+                0 0 10px rgba(255, 255, 255, 0.5); /* Central glow */
+        }
+
+
+        /* --- SPIN WHEEL STYLES (STAGE 2) --- */
+
+        .wheel-container {
+            position: relative;
+            /* CRITICAL FIX: Use fixed size for guaranteed circle (340x340) */
+            width: 340px; 
+            height: 360px; /* Keep extra vertical space for indicator/message */
+            margin: 20px auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding-bottom: 20px; /* Space for indicator to sit below */
+            flex-shrink: 0;
+        }
+        
+        /* New wrapper for centering the wheel */
+        #wheel-rotation-wrapper {
+            width: 340px; 
+            height: 340px; 
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            /* This wrapper handles the centering */
+            transform: translate(-50%, -50%); 
+        }
+        
+        #fortune-wheel {
+            width: 100%; 
+            height: 100%; 
+            border-radius: 50%;
+            position: relative;
+            overflow: hidden;
+            transform-origin: center center;
+            /* CRITICAL: The wheel itself only handles the rotation animation */
+            transition: transform 1s cubic-bezier(0.25, 0.1, 0.25, 1.0); /* REDUCED DURATION TO 1s */
+            
+            /* Add Gray Border */
+            border: 5px solid #666;
+            
+            /* Programmatically drawn 8-sector wheel with alternating colors */
+            background-image: none;
+            background: conic-gradient(
+                #fe2858 0% 45deg, 
+                #2af0ea 45deg 90deg,
+                #fe2858 90deg 135deg,
+                #2af0ea 135deg 180deg,
+                #fe2858 180deg 225deg,
+                #2af0ea 225deg 270deg,
+                #fe2858 270deg 315deg,
+                #2af0ea 315deg 360deg
+            );
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
+        }
+        
+        /* Center Element (Faux Logo) - CLICKABLE */
+        #fortune-wheel::before {
+            content: ''; 
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            background-color: white; 
+            border: 5px solid #666; /* Gray rim */
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+            z-index: 2; 
+            cursor: pointer; /* Makes the logo area clearly clickable */
+
+            /* Logo image implementation */
+            background-image: url('https://i.postimg.cc/ZqC3txGH/pngwing-com.png');
+            background-size: 80px 80px; /* Adjusted size for better visibility */
+            background-repeat: no-repeat;
+            background-position: center;
+        }
+
+        /* Gift icon style */
+        .positioned-gift-icon {
+            position: absolute;
+            width: 60px; 
+            height: 60px;
+            
+            /* Using absolute positioning and margins to center the gift icon itself */
+            margin-left: -30px; /* -(width / 2) */
+            margin-top: -30px;  /* -(height / 2) */
+            
+            /* The element is placed inside the wheel. The position will be set via JS top/left */
+            
+            /* Inner wrapper to center the content */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            
+            /* The image inside the wrapper */
+            & img {
+                width: 100%;
+                height: 100%;
+                object-fit: contain;
+            }
+            
+            /* Set the gift size and filter */
+            object-fit: contain;
+            z-index: 3;
+            filter: drop-shadow(0 0 4px rgba(0, 0, 0, 0.8));
+        }
+        
+        /* Buttons */
+        #claim-button {
+            background-color: #ff0050; 
+            color: white;
+            padding: 12px 30px;
+            border-radius: 9999px;
+            font-size: 1.25rem;
+            font-weight: 800;
+            border: none;
+            box-shadow: 0 5px 15px rgba(255, 0, 80, 0.6);
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-bottom: 20px; /* Added margin for separation from rewards */
+        }
+
+        #claim-button:hover:not(:disabled) {
+            background-color: #e60048;
+            transform: scale(1.05);
+        }
+
+        /* Color for CLAIMED state */
+        #claim-button[data-claimed="true"] {
+            background-color: #2af0ea !important; /* Brighter turquoise */
+            box-shadow: 0 5px 15px rgba(42, 240, 234, 0.6);
+        }
+
+
+        /* Indicator positioning: sits just below the wheel area */
+        .indicator {
+            position: absolute;
+            /* Position relative to wheel-container */
+            bottom: 0px; 
+            left: 50%; 
+            transform: translateX(-50%) translateY(50%); /* Center and pull down below the bottom edge */
+            width: 0;
+            height: 0;
+            border-left: 15px solid transparent;
+            border-right: 15px solid transparent;
+            border-bottom: 25px solid #fe2858; 
+            border-top: none;
+            z-index: 10;
+        }
+
+        #claim-button {
+            display: none;
+        }
+
+        /* REWARDS SECTION STYLES */
+        .rewards-container {
+            display: flex;
+            gap: 15px;
+            /* Corrected margin to sit right below the claim button */
+            margin-top: 0px; 
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 10px;
+            width: 90%;
+            justify-content: center;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+        }
+
+        .reward-slot {
+            width: 70px;
+            height: 70px;
+            border: 3px dashed #666;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .reward-slot img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            opacity: 0.9;
+        }
+
+        /* --- CONFETTI ANIMATION STYLES (RESTORED AND IMPROVED) --- */
+        #confetti-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            /* Set overflow to visible to allow particles to fly slightly outside the bounds, 
+               but keep overall overflow hidden on #phone-container */
+            overflow: visible; 
+            z-index: 20;
+            display: none; /* Controlled by JS */
+        }
+        
+        .confetti {
+            position: absolute;
+            background-color: var(--c); /* Uses color from JS */
+            width: var(--s); /* Uses size from JS */
+            height: var(--s); /* Uses size from JS */
+            border-radius: 50%;
+            opacity: 0;
+            
+            /* Apply custom transform animation */
+            animation: burst 1.5s ease-out forwards; 
+            transform: translate(var(--x), var(--y)) rotate(0deg); 
+            animation-delay: var(--d); /* Uses delay from JS */
+        }
+
+        @keyframes burst {
+            0% { 
+                opacity: 1; 
+                transform: 
+                    translate(var(--x), var(--y)) 
+                    scale(1) 
+                    rotate(var(--r)); 
+            }
+            100% { 
+                opacity: 0; 
+                /* Move confetti radially outwards from the burst center (x, y) */
+                /* Increased trajectory distance for a more impressive effect */
+                transform: 
+                    translate(calc(var(--x) + var(--r) * 15px), calc(var(--y) + 350px)) 
+                    scale(0.5) 
+                    rotate(calc(var(--r) + 720deg)); 
+            }
+        }
+        /* --- WIN MODAL STYLES --- */
+        #win-modal {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 30;
+            display: none; /* Hidden by default */
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        
+        #win-modal.active {
+            opacity: 1;
+        }
+
+        .modal-content {
+            background: linear-gradient(145deg, #1f084a, #000); 
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            color: white;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.9);
+            border: 2px solid #fe2858;
+            max-width: 80%;
+            transform: scale(0.8);
+            transition: transform 0.3s ease-out;
+        }
+
+        #win-modal.active .modal-content {
+            transform: scale(1);
+        }
+
+        #modal-gift-image {
+            width: 100px;
+            height: 100px;
+            margin: 15px auto;
+            object-fit: contain;
+            filter: drop-shadow(0 0 8px #2af0ea);
+        }
+
+        #modal-spin-again-button {
+            background-color: #2af0ea;
+            color: #000;
+            padding: 10px 25px;
+            border-radius: 9999px;
+            font-size: 1.1rem;
+            font-weight: 800;
+            border: none;
+            cursor: pointer;
+            margin-top: 20px;
+            box-shadow: 0 4px 15px rgba(42, 240, 234, 0.7);
+            transition: all 0.2s;
+        }
+        
+        #modal-spin-again-button:hover {
+            transform: scale(1.05);
+        }
+
+        /* Red color for final claim */
+        #modal-spin-again-button[data-final="true"] {
+            background-color: #ff0050 !important;
+            box-shadow: 0 4px 15px rgba(255, 0, 80, 0.7);
+            color: white;
+        }
+    </style>
+</head>
+<body class="show-video">
+
+    <!-- PHONE CONTAINER -->
+    <div id="phone-container" class="relative">
+        
+        <!-- STAGE 1: VIDEO AND CHEST -->
+        <div id="stage-video" class="stage">
+            
+            <!-- NEW: Preload Delay Overlay (Blocks interaction and visual until 5s) -->
+            <div id="preload-delay" onclick="startVideoLogic()">
+                Click to Start Video Demo
+                <div id="play-icon"></div>
+            </div> 
+
+            <!-- IFRAME FOR VIDEO -->
+            <iframe 
+                id="intro-iframe" 
+                src="https://streamable.com/e/zzcefv?autoplay=1&loop=1&mute=1&controls=0"
+                allow="autoplay; fullscreen; picture-in-picture" 
+                title="Embedded Video"
+                loading="eager">
+            </iframe>
+            
+            <!-- OVERLAY TO BLOCK CLICKS ON THE VIDEO PLAYER (Now covered by preload-delay initially) -->
+            <div id="iframe-blocker"></div> 
+
+            <!-- CHEST OVERLAY -->
+            <div id="chest-overlay" onclick="goToWheel()">
+                <img id="chest-image" src="https://i.postimg.cc/ZqhjJgL3/tiktokchest.webp" alt="Treasure Chest">
+                <div id="chest-text">Open daily chest</div>
+            </div>
+        </div>
+
+        <!-- STAGE 2: FORTUNE WHEEL -->
+        <div id="stage-wheel" class="stage">
+            <!-- Updated Header with Gradient Shadow -->
+            <div class="tiktok-gifts-header">TikTok LIVE Gifts</div>
+            
+            <!-- Wheel and Indicator -->
+            <div id="wheel-clickable-area" class="wheel-container">
+                <!-- NEW: Wrapper for centering the wheel (handles translate) -->
+                <div id="wheel-rotation-wrapper">
+                    <div id="fortune-wheel">
+                        <!-- Gifts positioned by JS -->
+                    </div>
+                </div>
+                 <!-- Indicator is now placed inside the wheel container for easier positioning -->
+                <div class="indicator"></div>
+            </div>
+            
+            <button id="claim-button" onclick="claimReward()">CLAIM</button>
+            
+            <!-- New Rewards Display Section -->
+            <div class="rewards-container">
+                <div class="reward-slot" id="reward-slot-0"></div>
+                <div class="reward-slot" id="reward-slot-1"></div>
+                <div class="reward-slot" id="reward-slot-2"></div>
+            </div>
+
+            <!-- WIN MODAL -->
+            <div id="win-modal">
+                <div class="modal-content">
+                    <h2 class="text-3xl font-bold text-white mb-2">You Won!</h2>
+                    <img id="modal-gift-image" src="" alt="Won Gift">
+                    <button id="modal-spin-again-button" onclick="continueSpinning()">Spin Again</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- CONFETTI CONTAINER (REMOVED) -->
+        <div id="confetti-container"></div>
+    </div>
+
+    <script>
+        // Get the new rotation wrapper element
+        const wheelRotationWrapper = document.getElementById('wheel-rotation-wrapper');
+        
+        const videoIframe = document.getElementById('intro-iframe');
+        const chestOverlay = document.getElementById('chest-overlay');
+        const phoneContainer = document.getElementById('phone-container');
+        const wheel = document.getElementById('fortune-wheel');
+        const claimButton = document.getElementById('claim-button');
+        const clickableWheelArea = document.getElementById('wheel-clickable-area');
+        const winModal = document.getElementById('win-modal');
+        const modalGiftImage = document.getElementById('modal-gift-image');
+        const modalSpinAgainButton = document.getElementById('modal-spin-again-button');
+        const confettiContainer = document.getElementById('confetti-container'); 
+        const preloadDelay = document.getElementById('preload-delay');
+
+        
+        // Reward slots
+        const rewardSlots = [
+            document.getElementById('reward-slot-0'),
+            document.getElementById('reward-slot-1'),
+            document.getElementById('reward-slot-2')
+        ];
+        
+        // State variables
+        let spinsCount = 0; // Tracks successful spins
+        let currentWinningGift = null; // Stores the gift for the modal
+        
+        // --- Video Setup ---
+        
+        // Estimated video duration: 15 seconds (from previous context)
+        const videoDurationEstimateMs = 15000; 
+        
+        // Time from CLICK until chest appears (15s total duration - 2s stop time = 13s)
+        const chestAppearDelayMs = 13000; // 13 seconds from click
+
+        // Function to remove the visual block and allow video to start (visually)
+        function startVideoLogic() {
+            // Remove the black screen (visually starts the video)
+            preloadDelay.style.opacity = '0';
+            preloadDelay.style.pointerEvents = 'none';
+
+            // Set up the timer for the chest to appear exactly 13 seconds later
+            setTimeout(() => {
+                // Dim the video and show the chest overlay
+                videoIframe.style.opacity = '0.5'; 
+                chestOverlay.style.display = 'flex';
+                document.body.style.overflow = 'hidden'; 
+            }, chestAppearDelayMs);
+        }
+
+        // --- Stage Transition ---
+
+        function goToWheel() {
+            phoneContainer.classList.add('show-wheel');
+            chestOverlay.style.display = 'none';
+            // Reset state if coming back from wheel (although not possible in this flow)
+            spinsCount = 0; 
+            rewardSlots.forEach(slot => slot.innerHTML = '');
+            claimButton.style.display = 'none';
+        }
+
+        // --- Confetti Animation (RESTORED) ---
+        const confettiColors = ['#ff0050', '#00f2ea', '#ffa500', '#8a2be2', '#32cd32'];
+
+        function generateConfetti(x, y, count = 70) {
+            confettiContainer.style.display = 'block';
+            
+            // CRITICAL FIX: Ensure X and Y are within the bounds of the phone-container 
+            // by using percentage or calculating relative to its dimensions.
+            // Since we use transform: translate(var(--x), var(--y)), x and y should be 
+            // the initial absolute coordinates where the burst starts.
+            
+            for (let i = 0; i < count; i++) { 
+                const confetti = document.createElement('div');
+                confetti.className = 'confetti';
+
+                // Random angle and size for the radial burst
+                const angle = Math.random() * 360; 
+                const size = Math.random() * 6 + 4; // Sizes between 4px and 10px
+                const radius = Math.random() * 300 + 100; // Radius of the burst
+
+                // Calculate radial offset for the burst
+                const offsetX = Math.cos(angle * (Math.PI / 180)) * radius;
+                const offsetY = Math.sin(angle * (Math.PI / 180)) * radius;
+
+                // Set CSS variables for animation
+                // NOTE: Here --x and --y are offsets from the initial position (confetti.style.left/top)
+                confetti.style.setProperty('--x', `${offsetX}px`);
+                confetti.style.setProperty('--y', `${offsetY}px`);
+                confetti.style.setProperty('--r', `${angle}deg`); // Rotation value for CSS
+                confetti.style.setProperty('--c', confettiColors[Math.floor(Math.random() * confettiColors.length)]);
+                confetti.style.setProperty('--s', `${size}px`);
+                confetti.style.setProperty('--d', `${Math.random() * 0.1}s`);
+
+                // Initial position (left/top) is the center of the burst
+                confetti.style.left = `${x}px`;
+                confetti.style.top = `${y}px`;
+
+                confettiContainer.appendChild(confetti);
+            }
+
+            // Clear confetti after animation ends
+            setTimeout(() => {
+                // Only clear children if they exist to prevent flickering during quick consecutive calls
+                if (confettiContainer.children.length > 0) { 
+                    confettiContainer.style.display = 'none';
+                    confettiContainer.innerHTML = '';
+                }
+            }, 1800); 
+        }
+        
+        function burstConfetti() {
+            // Get phone container bounds to define burst points
+            const rect = phoneContainer.getBoundingClientRect();
+            const width = rect.width; 
+            const height = rect.height;
+
+            // 7 STRATEGIC BURST POINTS ACROSS THE PHONE SCREEN (calculated in pixels)
+            // The coordinates are the center of the burst relative to the phone-container
+            const burstPoints = [
+                { x: width * 0.1, y: height * 0.1 }, // Top-Left
+                { x: width * 0.9, y: height * 0.1 }, // Top-Right
+                { x: width * 0.1, y: height * 0.9 }, // Bottom-Left
+                { x: width * 0.9, y: height * 0.9 }, // Bottom-Right
+                { x: width * 0.5, y: height * 0.05 }, // Top-Center
+                { x: width * 0.5, y: height * 0.5 },  // True Center
+                { x: width * 0.5, y: height * 0.95 }  // Bottom-Center (near rewards)
+            ];
+
+            burstPoints.forEach(point => {
+                // Pass calculated pixel values
+                generateConfetti(point.x, point.y, 70); 
+            });
+        }
+        // --- Spin Wheel Functionality ---
+
+        function claimReward() {
+            if (claimButton.textContent === "CLAIMED!") return;
+            
+            // LAUNCH CONFETTI IMMEDIATELY UPON FINAL CLAIM
+            burstConfetti();
+
+            claimButton.disabled = true;
+            claimButton.textContent = "CLAIMED!";
+            claimButton.setAttribute('data-claimed', 'true'); // Set custom attribute for CSS color change
+        }
+
+        const gifts = [
+            { name: "1", image: "https://i.postimg.cc/YqL26Rr2/1.webp" },
+            { name: "2", image: "https://i.postimg.cc/QxKNQm88/2.webp" },
+            { name: "3", image: "https://i.postimg.cc/jdnqHcxd/3.webp" },
+            { name: "4", image: "https://i.postimg.cc/P5GX2Dxg/4.webp" },
+            { name: "5", image: "https://i.postimg.cc/FHtrDSz5/5.webp" },
+            { name: "6", image: "https://i.postimg.cc/BnWSMFbW/6.webp" },
+            { name: "7", image: "https://i.postimg.cc/R06gyHZ3/5d5ced6572464c1cf2b0deb92845014b-png-tplv-obj.webp" }, 
+            { name: "8", "image": "https://i.postimg.cc/KYk0wM81/7e76f2366a3124b2f65d3903854dadb7-png-tplv-obj.webp" } 
+        ];
+        
+        const numSectors = gifts.length; // 8 sectors
+        const anglePerSector = 360 / numSectors; // 45 degrees
+        // CRITICAL FIX: Base calculations on the actual wheel size (340x340)
+        const wheelDiameter = 340;
+        const wheelRadius = wheelDiameter / 2; 
+        const giftIconSize = 60; // size of the gift icon
+        // Set this value to ensure no clipping (safer margin).
+        // 130px from the center for a 170px radius wheel.
+        const giftRadialDistance = 130; 
+
+        function drawWheel() {
+            wheel.innerHTML = '';
+            
+            gifts.forEach((gift, index) => {
+                const container = document.createElement('div');
+                container.className = 'positioned-gift-icon';
+                
+                // Calculate the angle for the center of its sector (in radians)
+                const angleRad = ((index * anglePerSector + anglePerSector / 2) - 90) * (Math.PI / 180);
+                
+                // Use trigonometry to find the X and Y coordinates relative to the center of the wheel (170, 170)
+                const x = wheelRadius + giftRadialDistance * Math.cos(angleRad);
+                const y = wheelRadius + giftRadialDistance * Math.sin(angleRad);
+
+                container.style.left = `${x}px`;
+                container.style.top = `${y}px`;
+
+                const icon = document.createElement('img');
+                icon.src = gift.image;
+                icon.alt = `Gift ${gift.name}`;
+                icon.style.width = '100%';
+                icon.style.height = '100%';
+
+                container.appendChild(icon);
+                wheel.appendChild(container);
+            });
+        }
+
+        // Initialize wheel
+        drawWheel();
+
+        let isSpinning = false;
+        let totalRotation = 0; 
+
+        function addGiftToSlot(gift) {
+            // Gifts should be added sequentially from left to right (index 0, 1, 2)
+            if (spinsCount < 3) {
+                const img = document.createElement('img');
+                img.src = gift.image;
+                img.alt = `Reward ${gift.name}`;
+                // Use spinsCount as the index to ensure left-to-right insertion
+                rewardSlots[spinsCount].innerHTML = ''; // Clear slot
+                rewardSlots[spinsCount].appendChild(img);
+            }
+        }
+        
+        // --- Win Modal Functions ---
+
+        function showWinModal(gift) {
+            modalGiftImage.src = gift.image;
+            modalGiftImage.alt = `You won ${gift.name}`;
+            
+            // Check if this is the final spin (2 completed, 3rd starting)
+            if (spinsCount + 1 >= 3) {
+                modalSpinAgainButton.textContent = "Claim Reward";
+                modalSpinAgainButton.setAttribute('data-final', 'true'); 
+            } else {
+                modalSpinAgainButton.textContent = "Spin Again";
+                modalSpinAgainButton.setAttribute('data-final', 'false');
+            }
+            
+            winModal.style.display = 'flex';
+            // Use timeout to activate transition class
+            setTimeout(() => winModal.classList.add('active'), 10); 
+        }
+
+        function continueSpinning() {
+            // Check if it's the final claim
+            if (modalSpinAgainButton.getAttribute('data-final') === 'true') {
+                // 1. If final spin, treat this as the claim action
+                winModal.classList.remove('active');
+                winModal.style.display = 'none';
+
+                // 2. Add the last gift to the slot
+                if (currentWinningGift) {
+                    addGiftToSlot(currentWinningGift);
+                    spinsCount++;
+                }
+                
+                // 3. LAUNCH CONFETTI HERE!
+                burstConfetti();
+
+                // 4. Show the main claim button permanently and set CLAIMED state
+                claimButton.style.display = 'block';
+                claimButton.disabled = true;
+                claimButton.textContent = "CLAIMED!";
+                claimButton.setAttribute('data-claimed', 'true'); // SET CLAIMED STATE
+                
+            } else {
+                // Not the final spin, just continue
+                winModal.classList.remove('active');
+                winModal.style.display = 'none';
+                
+                // Add the gift to the slot
+                if (currentWinningGift) {
+                    addGiftToSlot(currentWinningGift);
+                    spinsCount++;
+                }
+
+                // *** CRITICAL FIX: Immediately spin again ***
+                spinWheel();
+            }
+        }
+        
+        // --- Main Spin Logic ---
+
+        function spinWheel() {
+            // Block spinning if the modal is open or already 3 spins
+            if (isSpinning || winModal.style.display === 'flex') return;
+
+            if (spinsCount >= 3) {
+                return;
+            }
+
+            isSpinning = true;
+            
+            // Select a random winning sector (index 0-7)
+            const winningIndex = Math.floor(Math.random() * numSectors);
+            const winningGift = gifts[winningIndex];
+            currentWinningGift = winningGift; // Store the winning gift
+
+            // Indicator is at 180 degrees (bottom). 
+            const centerAngleOfWinningSector = (winningIndex * anglePerSector) + (anglePerSector / 2);
+            let rotationToStopAt = 180 - centerAngleOfWinningSector;
+            rotationToStopAt = (rotationToStopAt % 360 + 360) % 360; 
+
+            // Add a high number of full rotations (e.g., 3) to make it look realistic
+            const fullRotations = 360 * 3; // REDUCED full rotations for 1s spin
+
+            // Calculate rotation needed from current position
+            const currentRotationIn360 = totalRotation % 360; 
+            let rotationNeeded = rotationToStopAt - currentRotationIn360;
+            
+            if (rotationNeeded < 0) {
+                rotationNeeded += 360; 
+            }
+            if (rotationNeeded < anglePerSector) { 
+                 rotationNeeded += 360;
+            }
+            
+            const newTotalRotation = totalRotation + fullRotations + rotationNeeded;
+
+            // Apply rotation to the wheel
+            wheel.style.transform = `rotate(${newTotalRotation}deg)`;
+            totalRotation = newTotalRotation;
+
+            // Handle result after rotation finishes (1 second)
+            setTimeout(() => {
+                isSpinning = false;
+                showWinModal(winningGift); // Show the modal with the winning gift
+                
+            }, 1500); // 1000ms transition + 500ms delay
+        }
+        
+        // --- Click Handler for the Center Logo ---
+        clickableWheelArea.addEventListener('click', (event) => {
+             // We check if the click was specifically on the wheel's center element (the ::before pseudo-element's area)
+             const rect = wheel.getBoundingClientRect();
+             const x = event.clientX - rect.left;
+             const y = event.clientY - rect.top;
+             
+             const centerRadius = 50; 
+             const centerX = rect.width / 2;
+             const centerY = rect.height / 2;
+             
+             const distance = Math.sqrt(Math.pow(x - centerX, 2) + Math.pow(y - centerY, 2));
+             
+             if (distance <= centerRadius + 5) { // 5px tolerance on the 100px logo area
+                 spinWheel();
+             }
+        });
+    </script>
+
+</body>
+</html>
